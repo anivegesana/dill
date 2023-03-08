@@ -41,20 +41,38 @@ def test_enums():
         CURLY = 2
         MOE = 3
 
+    assert dill.copy(Stooges) is not Stooges
+    assert dill.copy(Stooges.LARRY) is not Stooges.LARRY
+    assert repr(dill.copy(Stooges.LARRY)) == repr(Stooges.LARRY)
+
     class IntStooges(int, Enum):
         LARRY = 1
         CURLY = 2
         MOE = 3
+
+    assert dill.copy(IntStooges) is not IntStooges
+    assert dill.copy(IntStooges.LARRY) is not IntStooges.LARRY
+    assert int(dill.copy(IntStooges.LARRY)) == int(IntStooges.LARRY)
 
     class FloatStooges(float, Enum):
         LARRY = 1.39
         CURLY = 2.72
         MOE = 3.142596
 
+    assert dill.copy(FloatStooges) is not FloatStooges
+    assert dill.copy(FloatStooges.LARRY) is not FloatStooges.LARRY
+    assert float(dill.copy(FloatStooges.LARRY)) == float(FloatStooges.LARRY)
+
     class FlagStooges(Flag):
         LARRY = 1
         CURLY = 2
         MOE = 3
+
+    assert dill.copy(FlagStooges) is not FlagStooges
+    assert dill.copy(FlagStooges.LARRY) is not FlagStooges.LARRY
+    assert repr(dill.copy(FlagStooges.LARRY)) == repr(FlagStooges.LARRY)
+    assert dill.copy(FlagStooges.LARRY | FlagStooges.CURLY) is not (FlagStooges.LARRY | FlagStooges.CURLY)
+    assert repr(dill.copy(FlagStooges.LARRY | FlagStooges.CURLY)) == repr(FlagStooges.LARRY | FlagStooges.CURLY)
 
     # https://stackoverflow.com/a/56135108
     class ABCEnumMeta(abc.ABCMeta, EnumMeta):
@@ -74,16 +92,20 @@ def test_enums():
                     pass
             return abstract_enum_cls
 
-    l = locals()
-    exec("""class StrEnum(str, abc.ABC, Enum, metaclass=ABCEnumMeta):
+    assert dill.copy(ABCEnumMeta)
+
+    class StrEnum(str, abc.ABC, Enum, metaclass=ABCEnumMeta):
         'accepts only string values'
         def invisible(self):
-            return "did you see me?" """, None, l)
-    StrEnum = l['StrEnum']
+            return "did you see me?"
+
+    assert dill.copy(StrEnum)
 
     class Name(StrEnum):
         BDFL = 'Guido van Rossum'
         FLUFL = 'Barry Warsaw'
+
+    assert dill.copy(Name)
 
     assert 'invisible' in dir(dill.copy(Name).BDFL)
     assert 'invisible' in dir(dill.copy(Name.BDFL))
@@ -92,6 +114,10 @@ def test_enums():
     Question = Enum('Question', 'who what when where why', module=__name__)
     Answer = Enum('Answer', 'him this then there because')
     Theory = Enum('Theory', 'rule law supposition', qualname='spanish_inquisition')
+
+    assert dill.copy(Question)
+    assert dill.copy(Answer)
+    assert dill.copy(Theory).__qualname__ == 'spanish_inquisition'
 
     class Fruit(Enum):
         TOMATO = 1
@@ -106,7 +132,9 @@ def test_enums():
         NEW_YEAR = 2013, 1, 1
         IDES_OF_MARCH = 2013, 3, 15
 
+    Holiday.NEW_YEAR.slot = 2
     assert hasattr(dill.copy(Holiday), 'NEW_YEAR')
+    assert dill.copy(Holiday.NEW_YEAR).slot == 2
 
     class HolidayTuple(tuple, Enum):
         NEW_YEAR = 2013, 1, 1
@@ -124,9 +152,8 @@ def test_enums():
     class SubEnum(SuperEnum):
         sample = 5
 
-    if sys.hexversion >= 0x030a0000:
-        assert 'description' in dir(dill.copy(SubEnum.sample))
-        assert 'description' in dir(dill.copy(SubEnum).sample)
+    assert 'description' in dir(dill.copy(SubEnum.sample))
+    assert 'description' in dir(dill.copy(SubEnum).sample)
 
     class WeekDay(IntEnum):
         SUNDAY = 1
@@ -146,6 +173,8 @@ def test_enums():
             obj = int.__new__(cls, value)
             obj._value_ = value
             return obj
+
+    assert dill.copy(AutoNumber)
 
     class Color(AutoNumber):
         red = ()

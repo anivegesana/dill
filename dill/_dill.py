@@ -78,6 +78,7 @@ from weakref import ReferenceType, ProxyType, CallableProxyType
 from collections import OrderedDict
 from enum import Enum, EnumMeta
 from functools import partial
+import copyreg
 from operator import itemgetter, attrgetter
 GENERATOR_FAIL = False
 import importlib.machinery
@@ -1731,7 +1732,6 @@ def _get_typedict_enum(obj, _dict, attrs, postproc_list):
     for name, enum_value in obj.__members__.items():
         value = enum_value.value
         if base is None:
-            import copyreg
             base = type(value)
             reducer = copyreg.dispatch_table.get(base, None)
 
@@ -1746,6 +1746,16 @@ def _get_typedict_enum(obj, _dict, attrs, postproc_list):
             init_value = init_value[1]
         original_dict[name] = init_value
         del _dict[name]
+
+        # I assume that __slots__ is disallowed for enums, but this doesn't
+        # seem to be explicitly stated anywhere.
+        enum_attrs = enum_value.__dict__.copy()
+        del enum_attrs['_value_']
+        del enum_attrs['_name_']
+        del enum_attrs['__objclass__']
+        # TODO: Consider using the state argument to save_reduce?
+        for k, v in enum_attrs.items():
+            postproc_list.append((setattr, (enum_value, k, v)))
 
     _dict.pop('_member_names_', None)
     _dict.pop('_member_map_', None)
