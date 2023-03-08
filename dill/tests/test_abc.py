@@ -5,6 +5,7 @@ test dill's ability to pickle abstract base class objects
 import dill
 import abc
 from abc import ABC
+import warnings
 
 from types import FunctionType
 
@@ -66,8 +67,12 @@ class EasyAsAbc(OneTwoThree):
 def test_abc_non_local():
     assert dill.copy(OneTwoThree) is not OneTwoThree
     assert dill.copy(EasyAsAbc) is not EasyAsAbc
-    assert dill.copy(OneTwoThree, byref=True) is OneTwoThree
-    assert dill.copy(EasyAsAbc, byref=True) is EasyAsAbc
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", dill.PicklingWarning)
+        assert dill.copy(OneTwoThree, byref=True) is OneTwoThree
+        assert dill.copy(EasyAsAbc, byref=True) is EasyAsAbc
+
     instance = EasyAsAbc()
     # Set a property that StockPickle can't preserve
     instance.bar = lambda x: x**2

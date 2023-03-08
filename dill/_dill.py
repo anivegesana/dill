@@ -65,7 +65,8 @@ NotImplementedType = type(NotImplemented)
 SliceType = slice
 TypeType = type # 'new-style' classes #XXX: unregistered
 XRangeType = range
-from types import MappingProxyType as DictProxyType
+
+from types import MappingProxyType as DictProxyType, new_class
 from pickle import DEFAULT_PROTOCOL, HIGHEST_PROTOCOL, PickleError, \
         PicklingError, UnpicklingError
 import __main__ as _main_module
@@ -1676,7 +1677,7 @@ def save_module(pickler, obj):
 # Copyright (c) 2012, Regents of the University of California.
 # Copyright (c) 2009 `PiCloud, Inc. <http://www.picloud.com>`_.
 # License: https://github.com/cloudpipe/cloudpickle/blob/master/LICENSE
-def _get_typedict_type(cls, clsdict, postproc_list):
+def _get_typedict_type(cls, clsdict, attrs, postproc_list):
     """Retrieve a copy of the dict of a class without the inherited methods"""
     if len(cls.__bases__) == 1:
         inherited_dict = cls.__bases__[0].__dict__
@@ -1699,7 +1700,7 @@ def _get_typedict_type(cls, clsdict, postproc_list):
         clsdict.pop('__dict__', None)
         clsdict.pop('__weakref__', None)
         # clsdict.pop('__prepare__', None)
-    return clsdict
+    return clsdict, attrs
 
 def _get_typedict_abc(obj, _dict, attrs, postproc_list):
     if hasattr(abc, '_get_dump'):
@@ -1827,13 +1828,13 @@ def save_type(pickler, obj, postproc_list=None):
 
             # thanks to Tom Stepleton pointing out pickler._session unneeded
             logger.trace(pickler, "T2: %s", obj)
-            _dict = _get_typedict_type(obj, obj.__dict__.copy(), postproc_list) # copy dict proxy to a dict
-            attrs = None
+            _dict, attrs = _get_typedict_type(obj, obj.__dict__.copy(), None, postproc_list) # copy dict proxy to a dict
 
             slots = _dict.get('__slots__', ())
             if type(slots) == str:
                 # __slots__ accepts a single string
                 slots = (slots,)
+
             for name in slots:
                 _dict.pop(name, None)
 
@@ -1857,13 +1858,12 @@ def save_type(pickler, obj, postproc_list=None):
             elif qualname is not None:
                 postproc_list.append((setattr, (obj, '__qualname__', qualname)))
 
-            if not hasattr(obj, '__orig_bases__') and type(obj.__dict__) is dict:
+            if not hasattr(obj, '__orig_bases__') and obj.__prepare__ is type.__prepare__:
                 _save_with_postproc(pickler, (_create_type, (
                     type(obj), obj.__name__, obj.__bases__, _dict
                 )), obj=obj, postproc_list=postproc_list)
             else:
                 # This case will always work, but might be overkill.
-                from types import new_class
                 _metadict = {
                     'metaclass': type(obj)
                 }
