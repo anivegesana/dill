@@ -1752,6 +1752,10 @@ def _get_typedict_enum(obj, _dict, attrs, postproc_list):
     _dict.pop('_value2member_map_', None)
     _dict.pop('_generate_next_value_', None)
 
+    __new__ = _dict.pop('__new_member__', None)
+    if __new__ is not None:
+        _dict['__new__'] = __new__
+
     if attrs is not None:
         attrs.update(_dict)
         _dict = attrs
@@ -1843,7 +1847,7 @@ def save_type(pickler, obj, postproc_list=None):
             elif qualname is not None:
                 postproc_list.append((setattr, (obj, '__qualname__', qualname)))
 
-            if False: # not hasattr(obj, '__orig_bases__'):
+            if not hasattr(obj, '__orig_bases__') and type(obj.__dict__) is dict:
                 _save_with_postproc(pickler, (_create_type, (
                     type(obj), obj.__name__, obj.__bases__, _dict
                 )), obj=obj, postproc_list=postproc_list)

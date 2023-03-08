@@ -152,10 +152,9 @@ def test_enums():
         green = ()
         blue = ()
 
-    # TODO: This doesn't work yet
-    # Color_ = dill.copy(Color)
-    # assert list(Color_) == [Color_.red, Color_.green, Color_.blue]
-    # assert list(map(int, Color_)) == [1, 2, 3]
+    Color_ = dill.copy(Color)
+    assert list(Color_) == [Color_.red, Color_.green, Color_.blue]
+    assert list(map(int, Color_)) == [1, 2, 3]
 
 if __name__ == '__main__':
     test_enums()
