@@ -1065,6 +1065,27 @@ def _setitems(dest, source):
         dest[k] = v
 
 
+def _build(inst, state):
+    # https://github.com/python/cpython/blob/ffb41eaaf4b04f7f52ee095253fcc1c5ba62ca28/Lib/pickle.py#L1720-L1733
+    """
+    Default implementation of BUILD (i.e., __setstate__).
+    """
+    slotstate = None
+    if isinstance(state, tuple) and len(state) == 2:
+        state, slotstate = state
+    if state:
+        inst_dict = inst.__dict__
+        intern = sys.intern
+        for k, v in state.items():
+            if type(k) is str:
+                inst_dict[intern(k)] = v
+            else:
+                inst_dict[k] = v
+    if slotstate:
+        for k, v in slotstate.items():
+            setattr(inst, k, v)
+
+
 def _save_with_postproc(pickler, reduction, is_pickler_dill=None, obj=Getattr.NO_DEFAULT, postproc_list=None):
     if obj is Getattr.NO_DEFAULT:
         obj = Reduce(reduction) # pragma: no cover

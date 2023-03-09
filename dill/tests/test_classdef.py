@@ -276,6 +276,25 @@ def test_enummeta():
     assert dill.copy(HTTPStatus.OK) is HTTPStatus.OK
     assert dill.copy(enum.EnumMeta) is enum.EnumMeta
 
+def test_build():
+    build = dill._dill._build
+
+    y2 = Y2(1)
+    build(y2, (None, {'y': 2}))
+    assert y2.y == 2
+
+    class Z:
+        def __setattr__(self, k, v):
+            if k == 'y':
+                super().__setattr__(k, v)
+            else:
+                raise Exception('This is a problem')
+
+    z = Z()
+    build(z, ({'a': 1}, {'y': 2}))
+    assert z.a == 1
+    assert z.y == 2
+
 if __name__ == '__main__':
     test_class_instances()
     test_class_objects()
@@ -289,3 +308,4 @@ if __name__ == '__main__':
     test_origbases()
     test_metaclass()
     test_enummeta()
+    test_build()
